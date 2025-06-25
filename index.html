@@ -1,0 +1,136 @@
+<!--
+  IA vs RÉEL - index.html
+  Thème Dulux Valentine : bleu profond, accents colorés
+  Avec login pseudo et envoi SMS via Netlify Function
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IA vs RÉEL - Dulux Valentine</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+    :root { --dulux-blue:#003087; --dulux-white:#ffffff; --shadow:rgba(0,0,0,0.2); }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--dulux-blue);font-family:'Montserrat',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:var(--dulux-white);}
+    #app{width:360px;max-width:100%;background:var(--dulux-white);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px var(--shadow);position:relative;color:var(--dulux-blue);}
+    .header{background:var(--dulux-blue);text-align:center;padding:1rem;}
+    .header img{max-width:150px;}
+    .screen{display:none;flex-direction:column;align-items:center;justify-content:space-between;height:calc(100% - 72px);padding:1rem;}
+    .active{display:flex;}
+    h1{font-size:1.25rem;margin-bottom:0.5rem;}
+    input{width:80%;padding:0.5rem;margin:1rem 0;border:1px solid #ccc;border-radius:8px;font-size:1rem;}
+    .card{flex:1;width:100%;display:flex;align-items:center;justify-content:center;}
+    .card img{width:100%;height:auto;border-radius:12px;box-shadow:0 4px 12px var(--shadow);}
+    .buttons{display:flex;justify-content:space-around;width:100%;margin-top:1rem;}
+    .btn{width:56px;height:56px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;transition:transform .2s;}
+    .btn-photo{background:#e0e0e0;color:var(--dulux-blue);}
+    .btn-ia{background:#f15a24;color:var(--dulux-white);}
+    .btn:hover{transform:scale(1.1);}
+    .result-list{padding:.5rem;overflow-y:auto;flex:1;width:100%;}
+    .result-list li{margin-bottom:.5rem;font-size:.9rem;list-style:none;border-bottom:1px solid #ddd;padding-bottom:.25rem;color:var(--dulux-blue);}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header"><img src="logo.png" alt="Dulux Valentine"/></div>
+    <div id="screen-login" class="screen active">
+      <h1>Bienvenue sur IA vs RÉEL</h1>
+      <input id="usernameInput" type="text" placeholder="Entrez votre pseudo" />
+      <button id="loginBtn" class="btn btn-ia" style="width:80%;padding:0.75rem;font-size:1rem;border-radius:12px;">Valider</button>
+    </div>
+    <div id="screen-intro" class="screen">
+      <h1>Bonjour, <span id="usernameDisplay"></span> !</h1>
+      <button id="startBtn" class="btn btn-ia" style="width:80%;padding:0.75rem;font-size:1rem;border-radius:12px;">Commencer</button>
+    </div>
+    <template id="template-screen">
+      <div class="screen">
+        <h1 id="title"></h1>
+        <div class="card"><img id="quizImage" src="" alt="Visuel"></div>
+        <div class="buttons">
+          <button id="photoBtn" class="btn btn-photo">✖️</button>
+          <button id="iaBtn" class="btn btn-ia">❤️</button>
+        </div>
+      </div>
+    </template>
+    <div id="screen-result" class="screen">
+      <h1>Résultats</h1>
+      <p id="scoreText" style="margin-bottom:.5rem;"></p>
+      <ul class="result-list" id="resultList"></ul>
+    </div>
+  </div>
+  <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
+  <script>
+    let username = '';
+    const answers = [
+      'photo','ia','photo','photo','ia','ia','ia','photo','ia','ia',
+      'photo','photo','photo','ia','ia','photo','ia','ia','ia','ia',
+      'photo','photo','photo','ia','ia','ia','photo','ia','photo','photo',
+      'photo','ia','ia','ia','photo','photo','ia','photo','ia','photo',
+      'ia','ia','ia','ia','photo','photo','ia','photo','photo','photo'
+    ];
+    let current = 0, score = 0;
+    const app = document.getElementById('app'),
+          login = document.getElementById('screen-login'),
+          intro = document.getElementById('screen-intro'),
+          resultScreen = document.getElementById('screen-result');
+    const usernameInput = document.getElementById('usernameInput'),
+          loginBtn = document.getElementById('loginBtn'),
+          usernameDisplay = document.getElementById('usernameDisplay');
+
+    loginBtn.onclick = () => {
+      const val = usernameInput.value.trim();
+      if (!val) { alert('Entrez un pseudo !'); return; }
+      username = val;
+      login.classList.remove('active');
+      usernameDisplay.textContent = username;
+      intro.classList.add('active');
+    };
+
+    document.getElementById('startBtn').onclick = () => {
+      intro.classList.remove('active');
+      loadQuestion();
+    };
+
+    function loadQuestion() {
+      const tpl = document.getElementById('template-screen').content.cloneNode(true),
+            screen = tpl.querySelector('.screen'),
+            img = screen.querySelector('#quizImage'),
+            base = `images/visuel${String(current+1).padStart(2,'0')}`;
+      screen.querySelector('#title').textContent = `Visuel ${current+1}`;
+      img.src = base + '.jpeg';
+      img.onerror = () => { img.onerror = null; img.src = base + '.jpg'; };
+      try { Panzoom(img, { maxScale:4, contain:'outside' }); } catch(e) {}
+      screen.querySelector('#photoBtn').onclick = () => answer('photo');
+      screen.querySelector('#iaBtn').onclick = () => answer('ia');
+      app.appendChild(screen);
+      screen.classList.add('active');
+    }
+
+    function answer(ans) {
+      if (ans === answers[current]) score++;
+      const screens = app.querySelectorAll('.screen');
+      screens[screens.length-1].remove();
+      current++;
+      current < answers.length ? loadQuestion() : showResults();
+    }
+
+    function showResults() {
+      resultScreen.classList.add('active');
+      document.getElementById('scoreText').textContent = `Score : ${score}/${answers.length}`;
+      const ul = document.getElementById('resultList');
+      answers.forEach((a, i) => {
+        const li = document.createElement('li');
+        li.textContent = `Visuel ${i+1}: ${a.toUpperCase()}`;
+        ul.appendChild(li);
+      });
+      fetch('https://ton-backend.netlify.app/.netlify/functions/send-sms', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name: username, score: score, total: answers.length })
+      });
+    }
+  </script>
+</body>
+</html>
