@@ -100,7 +100,7 @@
             base = `images/visuel${String(current+1).padStart(2,'0')}`;
       screen.querySelector('#title').textContent = `Visuel ${current+1}`;
       img.src = base + '.jpeg';
-      img.onerror = () => { img.onerror = null; img.src = base + '.jpg'; };
+      img.onerror = () => { img.onerror = null; img.src = base + '.jpeg'; };
       try { Panzoom(img, { maxScale:4, contain:'outside' }); } catch(e) {}
       screen.querySelector('#photoBtn').onclick = () => answer('photo');
       screen.querySelector('#iaBtn').onclick = () => answer('ia');
